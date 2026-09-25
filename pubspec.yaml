@@ -1,0 +1,36 @@
+name: whatsapp_clone
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Pacotes Firebase atualizados e compatíveis entre si
+  firebase_core: ^3.12.0
+  firebase_auth: ^5.5.1
+  cloud_firestore: ^5.6.5
+  firebase_storage: ^12.4.4
+  
+  # Utilitários
+  image_picker: ^1.1.2
+  intl: ^0.20.2
+  shared_preferences: ^2.5.2
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Para adicionar imagens ao projeto no futuro, descomente as linhas abaixo:
+  # assets:
+  #   - assets/
