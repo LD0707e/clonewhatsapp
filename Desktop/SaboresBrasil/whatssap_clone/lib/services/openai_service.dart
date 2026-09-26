@@ -4,18 +4,25 @@ import 'package:flutter/foundation.dart';
 import 'package:whatssap_clone/config/env.dart';
 
 class OpenAIService {
-  static const String _baseUrl = 'https://api.openai.com/v1/chat/completions';
-
   final String apiKey;
   final String model;
+  final String baseUrl;
 
   OpenAIService({
     String? apiKey,
     String? model,
+    String? baseUrl,
   })  : apiKey = apiKey ?? Env.openAIApiKey,
-        model = model ?? Env.openAIModel;
+        model = model ?? Env.openAIModel,
+        baseUrl = baseUrl ?? Env.openAIBaseUrl;
 
   bool get isConfigured => apiKey.isNotEmpty;
+
+  static OpenAIService fromCustom() => OpenAIService(
+        apiKey: Env.customApiKey,
+        model: Env.customApiModel,
+        baseUrl: Env.customApiBaseUrl,
+      );
 
   String get _systemPrompt => '''Você é Orlando, um assistente virtual carismático e descontraído estilo WhatsApp. 
 Você tem o tema do app escuro com detalhes vermelhos. 
@@ -33,7 +40,7 @@ Responda sempre em português brasileiro.''';
 
     try {
       final response = await http.post(
-        Uri.parse(_baseUrl),
+        Uri.parse(baseUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',

@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import 'package:whatssap_clone/models/contact.dart';
 import 'package:whatssap_clone/services/openai_service.dart';
 import 'package:whatssap_clone/services/huggingface_service.dart';
+import 'package:whatssap_clone/services/gemini_service.dart';
 import 'dart:math';
 
 class ChatScreen extends StatefulWidget {
@@ -19,7 +20,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _chatController = InMemoryChatController();
   final OpenAIService _openAIService = OpenAIService();
+  final OpenAIService _customService = OpenAIService.fromCustom();
   final HuggingFaceService _hfService = HuggingFaceService();
+  final GeminiService _geminiService = GeminiService();
   final List<Map<String, dynamic>> _conversation = [];
   final Random _random = Random();
   String? _lastIntent;
@@ -64,6 +67,10 @@ class _ChatScreenState extends State<ChatScreen> {
       _sendViaHF(text);
     } else if (_openAIService.isConfigured) {
       _sendViaOpenAI(text);
+    } else if (_customService.isConfigured) {
+      _sendViaOpenAI(text, service: _customService);
+    } else if (_geminiService.isConfigured) {
+      _sendViaGemini(text);
     } else {
       Future.delayed(const Duration(milliseconds: 900), () {
         _sendFallbackReply(text);
@@ -114,7 +121,8 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _sendViaOpenAI(String text) async {
+  void _sendViaOpenAI(String text, {OpenAIService? service}) async {
+    final svc = service ?? _openAIService;
     final typingId = const Uuid().v4();
     await _chatController.insertMessage(
       TextStreamMessage(
@@ -126,7 +134,50 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     try {
-      final reply = await _openAIService.sendMessage(_conversation);
+      final reply = await svc.sendMessage(_conversation);
+      await _chatController.removeMessage(
+        TextStreamMessage(
+          id: typingId,
+          authorId: 'orlando',
+          createdAt: DateTime.now().toUtc(),
+          streamId: typingId,
+        ),
+      );
+      await _chatController.insertMessage(
+        TextMessage(
+          id: const Uuid().v4(),
+          authorId: 'orlando',
+          createdAt: DateTime.now().toUtc(),
+          text: reply,
+        ),
+      );
+      _conversation.add({'role': 'assistant', 'content': reply});
+    } catch (e) {
+      await _chatController.removeMessage(
+        TextStreamMessage(
+          id: typingId,
+          authorId: 'orlando',
+          createdAt: DateTime.now().toUtc(),
+          streamId: typingId,
+        ),
+      );
+      _sendFallbackReply(text);
+    }
+  }
+
+  void _sendViaGemini(String text) async {
+    final typingId = const Uuid().v4();
+    await _chatController.insertMessage(
+      TextStreamMessage(
+        id: typingId,
+        authorId: 'orlando',
+        createdAt: DateTime.now().toUtc(),
+        streamId: typingId,
+      ),
+    );
+
+    try {
+      final reply = await _geminiService.sendMessage(_conversation);
       await _chatController.removeMessage(
         TextStreamMessage(
           id: typingId,
